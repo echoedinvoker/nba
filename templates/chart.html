@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+  <!-- Google fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,300" rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
+
+  <!-- D3.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+
+  <!-- armchart -->
+  <script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+  <script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+  <script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+  <!-- Boostrap js -->
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+
+  <!-- React -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+
+  <!-- Resources -->
+  <title>W3.CSS Template</title>
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <!-- Boostrap CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+
+  <style>
+    body {
+      font-family: "Lato", sans-serif;
+      text-align: center;
+    }
+
+    .mySlides {
+      display: none
+    }
+
+    .legend {
+      font-family: 'Raleway', sans-serif;
+      fill: #333333;
+    }
+
+    .tooltip {
+      fill: #333333;
+    }
+
+    .custom-select {
+      width: fit-content;
+    }
+
+    .container {
+      margin: 0%;
+      width: auto;
+      white-space: nowrap;
+    }
+
+    .right {
+      width: 100%;
+      display: inline-block;
+    }
+
+    #radarChart {
+      display: inline-block;
+    }
+
+    .lineChart {
+      width: 80%;
+      height: 500px;
+    }
+
+    .bottom {
+      height: 200px;
+    }
+
+    .demo {
+      position: absolute;
+      width: 250px;
+      opacity: 0.4;
+    }
+
+    #main {
+      opacity: 0;
+      transition: opacity 1s;
+    }
+
+    .box {
+      /* 一開始寬度 0 是看不到的狀態 */
+      width: 0px;
+      /* 善用瀏覽器開發人員工具去找出最順眼的高度與顏色 */
+      height: 5px;
+      background-color: darkgray;
+      position: fixed;
+      bottom: 0px;
+      left: 0px;
+    }
+
+    @media screen and (max-width:1200px) {
+      .container {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .right {
+        display: block;
+      }
+
+      .lineChart {
+        width: 100%;
+      }
+
+      #radarChart {
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+      }
+    }
+  </style>
+  <script>
+    // 因為表格送出需求後，網頁還是用重載的方式，所以事件必須做在 window.onload 上
+    window.onload = function () {
+      var box = document.getElementById("box");
+      var style = window.getComputedStyle(box);
+      var size = style.getPropertyValue("width");
+      size = parseInt(size);
+      var animate = window.setInterval(function () {
+        if (size >= window.screen.width) {
+          window.clearInterval(animate);
+          // 把原本讓結果顯示的部分放在這裡，意思就是等動畫結束後才淡入結果出來
+          var main = document.getElementById("main");
+          main.style.opacity = 1;
+        }
+        size = size + 5;
+        box.style.width = size + "px";
+      }, 5);
+      let myForm = React.createElement(MyForm, null);
+      var mm = document.getElementById("reactForm");
+      ReactDOM.render(myForm, mm);
+    }
+    var ss = {{ ss| safe }};
+    var tf = {{ tf| safe }};
+    class MySelectSeason extends React.Component {
+      render() {
+        let options = [];
+        let hintOption = React.createElement("OPTION", { selected: null }, "請選擇賽季");
+        options.push(hintOption);
+        ss['season'].forEach(function (value, index, array) {
+          let option = React.createElement("OPTION", { value: value }, value);
+          options.push(option);
+        })
+        return React.createElement("SELECT", this.props, options);
+      }
+    }
+    class MySelectTeam extends React.Component {
+      render() {
+        let options = [];
+        let hintOption = React.createElement("OPTION", { selected: null }, "請選擇隊伍");
+        options.push(hintOption);
+        Object.keys(tf).forEach(function (key) {
+          let option = React.createElement("OPTION", { value: tf[key] }, key);
+          options.push(option);
+        })
+        return React.createElement("SELECT", this.props, options);
+      }
+    }
+    class MyForm extends React.Component {
+      render() {
+        let contains = [];
+        let selectSeason = React.createElement(MySelectSeason, { name: "s", class: "custom-select" });
+        contains.push(selectSeason);
+        let selectTeamA = React.createElement(MySelectTeam, { name: "t", class: "custom-select" });
+        contains.push(selectTeamA);
+        let selectTeamB = React.createElement(MySelectTeam, { name: "t2", class: "custom-select" });
+        contains.push(selectTeamB);
+        let button = React.createElement("BUTTON", { class: "btn btn-outline-secondary", onclick: "show();" },"送出查詢");
+        contains.push(button);
+        return React.createElement("FORM", { name: "myform", action: "/chart" }, contains);
+      }
+    }
+    
+  </script>
+</head>
+
+<!-- Navbar -->
+<nav class="w3-top">
+  <div class="w3-bar w3-black w3-card">
+    <a class="w3-bar-item w3-button w3-padding-large w3-hide-medium w3-hide-large w3-right" href="javascript:void(0)"
+      onclick="myFunction()" title="Toggle Navigation Menu"><i class="fa fa-bars"></i></a>
+    <a href="/" class="w3-bar-item w3-button w3-padding-large">HOME</a>
+    <a href="/ppt1" class="w3-bar-item w3-button w3-padding-large">ANALYSIS</a>
+    <a href="#" class="w3-bar-item w3-button w3-padding-large w3-hide-small">TOOL</a>
+    <button class="w3-bar-item w3-padding-large w3-hide-small">GIF</button>
+    <button class="w3-bar-item w3-padding-large w3-hide-small">PCA</button>
+    <a href="/link" class="w3-bar-item w3-button w3-padding-large w3-hide-small">LINK</a>
+    <a href="javascript:void(0)" class="w3-padding-large w3-hover-red w3-hide-small w3-right"><i
+        class="fa fa-search"></i></a>
+  </div>
+</nav>
+
+<!-- Navbar on small screens (remove the onclick attribute if you want the navbar to always show on top of the content when clicking on the links) -->
+
+<div id="navDemo" class="w3-bar-block w3-black w3-hide w3-hide-large w3-hide-medium w3-top" style="margin-top:46px">
+  <a href="#" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">TOOL</a>
+  <a href="/link" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">LINK</a>
+</div>
+
+<br>
+<br>
+<br>
+
+<!-------------------------------------------------------------------------------->
+<div id="reactForm"></div>
+
+
+<div id="main">
+  <div class="container">
+    <div class="radarChart" id="radarChart"></div>
+    <div class="right">
+      <img src={{ g1|safe }} alt="" class="demo">
+      <div id="chartdiv" class="lineChart"></div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="radarChart2" id="radarChart"></div>
+    <div class="right">
+      <img src={{ g2|safe }} alt="" class="demo">
+      <div id="chartdiv2" class="lineChart"></div>
+    </div>
+  </div>
+
+</div>
+<div class="box" id="box"></div>
+
+
+<!--script src="radarChart.js"></script-->
+<script src="{{ url_for('static', filename='radarChart.js') }}"></script>
+
+<!-- radar1 -->
+<script>
+  ////////////////////////////////////////////////////////////// 
+  ////////////////////////// Data ////////////////////////////// 
+  ////////////////////////////////////////////////////////////// 
+  var data;
+  d3.json("/data?s={{s}}&t={{t}}", function (d) {
+    data = d;
+
+
+    /* Radar chart design created by Nadieh Bremer - VisualCinnamon.com */
+
+    ////////////////////////////////////////////////////////////// 
+    //////////////////////// Set-Up ////////////////////////////// 
+    ////////////////////////////////////////////////////////////// 
+
+    var margin = { top: 100, right: 100, bottom: 100, left: 100 },
+      width = Math.min(600, window.innerWidth - 10) - margin.left - margin.right,
+      height = Math.min(width, window.innerHeight - margin.top - margin.bottom - 20);
+
+    ////////////////////////////////////////////////////////////// 
+    //////////////////// Draw the Chart ////////////////////////// 
+    ////////////////////////////////////////////////////////////// 
+
+    var color = d3.scale.ordinal()
+      .range(["#EDC951", "#CC333F", "#00A0B0"]);
+    var radarChartOptions = {
+      w: width,
+      h: height,
+      margin: margin,
+      maxValue: 0.5,
+      levels: 5,
+      roundStrokes: true,
+      color: color
+    };
+    //Call function to draw the Radar chart
+    RadarChart(".radarChart", data, radarChartOptions);
+  });
+</script>
+<!-- radar2 -->
+<script>
+  ////////////////////////////////////////////////////////////// 
+  ////////////////////////// Data ////////////////////////////// 
+  ////////////////////////////////////////////////////////////// 
+  var data;
+  d3.json("/data?s={{s}}&t={{t2}}", function (d) {
+    data = d;
+
+
+    /* Radar chart design created by Nadieh Bremer - VisualCinnamon.com */
+
+    ////////////////////////////////////////////////////////////// 
+    //////////////////////// Set-Up ////////////////////////////// 
+    ////////////////////////////////////////////////////////////// 
+
+    var margin = { top: 100, right: 100, bottom: 100, left: 100 },
+      width = Math.min(600, window.innerWidth - 10) - margin.left - margin.right,
+      height = Math.min(width, window.innerHeight - margin.top - margin.bottom - 20);
+
+    ////////////////////////////////////////////////////////////// 
+    //////////////////// Draw the Chart ////////////////////////// 
+    ////////////////////////////////////////////////////////////// 
+
+    var color = d3.scale.ordinal()
+      .range(["#00A0B0", "#CC333F", "#EDC951"]);
+    var radarChartOptions = {
+      w: width,
+      h: height,
+      margin: margin,
+      maxValue: 0.5,
+      levels: 5,
+      roundStrokes: true,
+      color: color
+    };
+    //Call function to draw the Radar chart
+    RadarChart(".radarChart2", data, radarChartOptions);
+  });
+</script>
+
+<!-- Chart code -->
+<script>
+  am4core.ready(function () {
+
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    // Themes end
+
+    // Create chart instance
+    var chart = am4core.create("chartdiv", am4charts.XYChart);
+
+    chart.colors.step = 2;
+    chart.maskBullets = false;
+
+    // Add data
+    chart.dataSource.url = "/data2?s={{s}}&t={{t}}";
+
+    // Create axes (edit ver)
+    var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
+    dateAxis.renderer.grid.template.location = 0;
+    dateAxis.renderer.minGridDistance = 50;
+    dateAxis.renderer.grid.template.disabled = true;
+    dateAxis.renderer.fullWidthTooltip = true;
+
+    var distanceAxis = chart.yAxes.push(new am4charts.ValueAxis());
+    // distanceAxis.title.text = "Distance";
+    distanceAxis.title.text = "TOP_PLAYERS";
+    distanceAxis.min = 0;
+    distanceAxis.max = 5;
+
+    //distanceAxis.renderer.grid.template.disabled = true;
+
+    // var durationAxis = chart.yAxes.push(new am4charts.DurationAxis());
+    // durationAxis.title.text = "Duration";
+    // durationAxis.baseUnit = "minute";
+    // //durationAxis.renderer.grid.template.disabled = true;
+    // durationAxis.renderer.opposite = true;
+    // durationAxis.syncWithAxis = distanceAxis;
+
+    // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
+
+    var durationAxis = chart.yAxes.push(new am4charts.ValueAxis());
+    // durationAxis.title.text = "Duration";
+    durationAxis.title.text = "EFF";
+    // durationAxis.baseUnit = "minute";
+    //durationAxis.renderer.grid.template.disabled = true;
+    durationAxis.renderer.opposite = true;
+    durationAxis.syncWithAxis = distanceAxis;
+
+    // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
+
+    var latitudeAxis = chart.yAxes.push(new am4charts.ValueAxis());
+    latitudeAxis.renderer.grid.template.disabled = true;
+    latitudeAxis.renderer.labels.template.disabled = true;
+    latitudeAxis.syncWithAxis = distanceAxis;
+
+    // Create series
+    var distanceSeries = chart.series.push(new am4charts.ColumnSeries());
+    // distanceSeries.dataFields.valueY = "distance";
+    distanceSeries.dataFields.valueY = "TOP_PLAYERS";
+    // distanceSeries.dataFields.dateX = "date";
+    distanceSeries.dataFields.dateX = "GAME_DATE_EST";
+    distanceSeries.yAxis = distanceAxis;
+    // distanceSeries.tooltipText = "{valueY} miles";
+    distanceSeries.tooltipText = "{valueY}";
+    // distanceSeries.name = "Distance";
+    distanceSeries.name = "TOP_PLAYERS";
+    distanceSeries.columns.template.fillOpacity = 0.7;
+    distanceSeries.columns.template.propertyFields.strokeDasharray = "dashLength";
+    distanceSeries.columns.template.propertyFields.fillOpacity = "alpha";
+    distanceSeries.showOnInit = true;
+
+    var distanceState = distanceSeries.columns.template.states.create("hover");
+    distanceState.properties.fillOpacity = 0.9;
+
+    var durationSeries = chart.series.push(new am4charts.LineSeries());
+    // durationSeries.dataFields.valueY = "duration";
+    durationSeries.dataFields.valueY = "EFF";
+    // durationSeries.dataFields.dateX = "date";
+    durationSeries.dataFields.dateX = "GAME_DATE_EST";
+    durationSeries.yAxis = durationAxis;
+    // durationSeries.name = "Duration";
+    durationSeries.name = "EFF";
+    durationSeries.strokeWidth = 2;
+    durationSeries.propertyFields.strokeDasharray = "dashLength";
+    // durationSeries.tooltipText = "{valueY.formatDuration()}";
+    durationSeries.tooltipText = "EFF: {valueY}";
+    durationSeries.showOnInit = true;
+
+    var durationBullet = durationSeries.bullets.push(new am4charts.Bullet());
+    var durationRectangle = durationBullet.createChild(am4core.Rectangle);
+    durationBullet.horizontalCenter = "middle";
+    durationBullet.verticalCenter = "middle";
+    durationBullet.width = 7;
+    durationBullet.height = 7;
+    durationRectangle.width = 7;
+    durationRectangle.height = 7;
+
+    var durationState = durationBullet.states.create("hover");
+    durationState.properties.scale = 1.2;
+
+    var latitudeSeries = chart.series.push(new am4charts.LineSeries());
+    // latitudeSeries.dataFields.valueY = "latitude";
+    latitudeSeries.dataFields.valueY = "ELO";
+    // latitudeSeries.dataFields.dateX = "date";
+    latitudeSeries.dataFields.dateX = "GAME_DATE_EST";
+    latitudeSeries.yAxis = latitudeAxis;
+    // latitudeSeries.name = "Duration";
+    latitudeSeries.name = "ELO";
+    latitudeSeries.strokeWidth = 2;
+    latitudeSeries.propertyFields.strokeDasharray = "dashLength";
+    // latitudeSeries.tooltipText = "Latitude: {valueY} ({townName})";
+    latitudeSeries.tooltipText = "ELO: {valueY}";
+    latitudeSeries.showOnInit = true;
+
+    var latitudeBullet = latitudeSeries.bullets.push(new am4charts.CircleBullet());
+    latitudeBullet.circle.fill = am4core.color("#fff");
+    latitudeBullet.circle.strokeWidth = 2;
+    // latitudeBullet.circle.propertyFields.radius = "townSize";
+    latitudeBullet.circle.propertyFields.radius = "WIN_PR";
+
+    var latitudeState = latitudeBullet.states.create("hover");
+    latitudeState.properties.scale = 1.2;
+
+    var latitudeLabel = latitudeSeries.bullets.push(new am4charts.LabelBullet());
+    latitudeLabel.label.text = "{townName2}";
+    latitudeLabel.label.horizontalCenter = "left";
+    latitudeLabel.label.dx = 14;
+
+    // Add legend
+    chart.legend = new am4charts.Legend();
+
+    // Add cursor
+    chart.cursor = new am4charts.XYCursor();
+    chart.cursor.fullWidthLineX = true;
+    chart.cursor.xAxis = dateAxis;
+    chart.cursor.lineX.strokeOpacity = 0;
+    chart.cursor.lineX.fill = am4core.color("#000");
+    chart.cursor.lineX.fillOpacity = 0.1;
+
+  }); // end am4core.ready()
+</script>
+
+<!-- Chart code -->
+<script>
+  am4core.ready(function () {
+
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    // Themes end
+
+    // Create chart instance
+    var chart = am4core.create("chartdiv2", am4charts.XYChart);
+
+    chart.colors.step = 2;
+    chart.maskBullets = false;
+
+    // Add data
+    chart.dataSource.url = "/data2?s={{s}}&t={{t2}}";
+
+    // Create axes (edit ver)
+    var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
+    dateAxis.renderer.grid.template.location = 0;
+    dateAxis.renderer.minGridDistance = 50;
+    dateAxis.renderer.grid.template.disabled = true;
+    dateAxis.renderer.fullWidthTooltip = true;
+
+    var distanceAxis = chart.yAxes.push(new am4charts.ValueAxis());
+    // distanceAxis.title.text = "Distance";
+    distanceAxis.title.text = "TOP_PLAYERS";
+    distanceAxis.min = 0;
+    distanceAxis.max = 5;
+
+    //distanceAxis.renderer.grid.template.disabled = true;
+
+    // var durationAxis = chart.yAxes.push(new am4charts.DurationAxis());
+    // durationAxis.title.text = "Duration";
+    // durationAxis.baseUnit = "minute";
+    // //durationAxis.renderer.grid.template.disabled = true;
+    // durationAxis.renderer.opposite = true;
+    // durationAxis.syncWithAxis = distanceAxis;
+
+    // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
+
+    var durationAxis = chart.yAxes.push(new am4charts.ValueAxis());
+    // durationAxis.title.text = "Duration";
+    durationAxis.title.text = "EFF";
+    // durationAxis.baseUnit = "minute";
+    //durationAxis.renderer.grid.template.disabled = true;
+    durationAxis.renderer.opposite = true;
+    durationAxis.syncWithAxis = distanceAxis;
+
+    // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
+
+    var latitudeAxis = chart.yAxes.push(new am4charts.ValueAxis());
+    latitudeAxis.renderer.grid.template.disabled = true;
+    latitudeAxis.renderer.labels.template.disabled = true;
+    latitudeAxis.syncWithAxis = distanceAxis;
+
+    // Create series
+    var distanceSeries = chart.series.push(new am4charts.ColumnSeries());
+    // distanceSeries.dataFields.valueY = "distance";
+    distanceSeries.dataFields.valueY = "TOP_PLAYERS";
+    // distanceSeries.dataFields.dateX = "date";
+    distanceSeries.dataFields.dateX = "GAME_DATE_EST";
+    distanceSeries.yAxis = distanceAxis;
+    // distanceSeries.tooltipText = "{valueY} miles";
+    distanceSeries.tooltipText = "{valueY}";
+    // distanceSeries.name = "Distance";
+    distanceSeries.name = "TOP_PLAYERS";
+    distanceSeries.columns.template.fillOpacity = 0.7;
+    distanceSeries.columns.template.propertyFields.strokeDasharray = "dashLength";
+    distanceSeries.columns.template.propertyFields.fillOpacity = "alpha";
+    distanceSeries.showOnInit = true;
+
+    var distanceState = distanceSeries.columns.template.states.create("hover");
+    distanceState.properties.fillOpacity = 0.9;
+
+    var durationSeries = chart.series.push(new am4charts.LineSeries());
+    // durationSeries.dataFields.valueY = "duration";
+    durationSeries.dataFields.valueY = "EFF";
+    // durationSeries.dataFields.dateX = "date";
+    durationSeries.dataFields.dateX = "GAME_DATE_EST";
+    durationSeries.yAxis = durationAxis;
+    // durationSeries.name = "Duration";
+    durationSeries.name = "EFF";
+    durationSeries.strokeWidth = 2;
+    durationSeries.propertyFields.strokeDasharray = "dashLength";
+    // durationSeries.tooltipText = "{valueY.formatDuration()}";
+    durationSeries.tooltipText = "EFF: {valueY}";
+    durationSeries.showOnInit = true;
+
+    var durationBullet = durationSeries.bullets.push(new am4charts.Bullet());
+    var durationRectangle = durationBullet.createChild(am4core.Rectangle);
+    durationBullet.horizontalCenter = "middle";
+    durationBullet.verticalCenter = "middle";
+    durationBullet.width = 7;
+    durationBullet.height = 7;
+    durationRectangle.width = 7;
+    durationRectangle.height = 7;
+
+    var durationState = durationBullet.states.create("hover");
+    durationState.properties.scale = 1.2;
+
+    var latitudeSeries = chart.series.push(new am4charts.LineSeries());
+    // latitudeSeries.dataFields.valueY = "latitude";
+    latitudeSeries.dataFields.valueY = "ELO";
+    // latitudeSeries.dataFields.dateX = "date";
+    latitudeSeries.dataFields.dateX = "GAME_DATE_EST";
+    latitudeSeries.yAxis = latitudeAxis;
+    // latitudeSeries.name = "Duration";
+    latitudeSeries.name = "ELO";
+    latitudeSeries.strokeWidth = 2;
+    latitudeSeries.propertyFields.strokeDasharray = "dashLength";
+    // latitudeSeries.tooltipText = "Latitude: {valueY} ({townName})";
+    latitudeSeries.tooltipText = "ELO: {valueY}";
+    latitudeSeries.showOnInit = true;
+
+    var latitudeBullet = latitudeSeries.bullets.push(new am4charts.CircleBullet());
+    latitudeBullet.circle.fill = am4core.color("#fff");
+    latitudeBullet.circle.strokeWidth = 2;
+    // latitudeBullet.circle.propertyFields.radius = "townSize";
+    latitudeBullet.circle.propertyFields.radius = "WIN_PR";
+
+    var latitudeState = latitudeBullet.states.create("hover");
+    latitudeState.properties.scale = 1.2;
+
+    var latitudeLabel = latitudeSeries.bullets.push(new am4charts.LabelBullet());
+    latitudeLabel.label.text = "{townName2}";
+    latitudeLabel.label.horizontalCenter = "left";
+    latitudeLabel.label.dx = 14;
+
+    // Add legend
+    chart.legend = new am4charts.Legend();
+
+    // Add cursor
+    chart.cursor = new am4charts.XYCursor();
+    chart.cursor.fullWidthLineX = true;
+    chart.cursor.xAxis = dateAxis;
+    chart.cursor.lineX.strokeOpacity = 0;
+    chart.cursor.lineX.fill = am4core.color("#000");
+    chart.cursor.lineX.fillOpacity = 0.1;
+
+  }); // end am4core.ready()
+</script>
+<script>
+  function myFunction() {
+    var x = document.getElementById("navDemo");
+    if (x.className.indexOf("w3-show") == -1) {
+      x.className += " w3-show";
+    } else {
+      x.className = x.className.replace(" w3-show", "");
+    }
+  }
+</script>
+</body>
+
+</html>
