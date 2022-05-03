@@ -65,6 +65,7 @@ def chart():
     SEASON = request.args.get('s',0)
     TEAM_ID = request.args.get('t',0)
     TEAM_ID2 = request.args.get('t2',0)
+    
     g1 = logo(int(TEAM_ID))
     g2 = logo(int(TEAM_ID2))
     
@@ -86,7 +87,7 @@ def chart():
     tf = tf[cols]
     tf = tf.to_dict('split')
     tf = dict(tf['data'])
-    # return render_template('chart.html', s=SEASON,t=TEAM_ID,t2=TEAM_ID2,g1=g1,g2=g2,ss=ss,tf=json.dumps(tf))
+    
     return render_template('chart.html', s=SEASON,t=TEAM_ID,t2=TEAM_ID2,g1=g1,g2=g2,ss=ss,tf=tf)
 
 @app.route('/data')
@@ -118,9 +119,16 @@ def data2():
     t.WIN_PR = (t.WIN_PR * 10).round(2)
     return jsonify(t.to_dict('records'))
 
-@app.route('/line')
-def line():
-    return render_template('line.html')
+@app.route('/data3')
+def data3():
+    TEAM_ID = request.args.get('t')
+    logoURL = logo(int(TEAM_ID))
+    # return jsonify({'logoURL':logoURL})
+    return jsonify({'logoURL':logoURL})
+
+@app.route('/test')
+def test():
+    return render_template('test2.html')
 
 if __name__ == "__main__":
     app.run(debug=False)   

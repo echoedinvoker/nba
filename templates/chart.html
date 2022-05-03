@@ -29,6 +29,9 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
 
   <!-- Resources -->
   <title>W3.CSS Template</title>
@@ -134,65 +137,301 @@
       }
     }
   </style>
-  <script>
-    // 因為表格送出需求後，網頁還是用重載的方式，所以事件必須做在 window.onload 上
+  <script type="text/babel">
     window.onload = function () {
-      var box = document.getElementById("box");
-      var style = window.getComputedStyle(box);
-      var size = style.getPropertyValue("width");
-      size = parseInt(size);
-      var animate = window.setInterval(function () {
-        if (size >= window.screen.width) {
-          window.clearInterval(animate);
-          // 把原本讓結果顯示的部分放在這裡，意思就是等動畫結束後才淡入結果出來
-          var main = document.getElementById("main");
-          main.style.opacity = 1;
-        }
-        size = size + 5;
-        box.style.width = size + "px";
-      }, 5);
-      let myForm = React.createElement(MyForm, null);
+      // var box = document.getElementById("box");
+      // var style = window.getComputedStyle(box);
+      // var size = style.getPropertyValue("width");
+      // size = parseInt(size);
+      // var animate = window.setInterval(function () {
+      //   if (size >= window.screen.width) {
+      //     window.clearInterval(animate);
+      //     var main = document.getElementById("main");
+      //     main.style.opacity = 1;
+      //   }
+      //   size = size + 5;
+      //   box.style.width = size + "px";
+      // }, 5);
+      let myForm = <MyForm/>;
       var mm = document.getElementById("reactForm");
       ReactDOM.render(myForm, mm);
     }
-    var ss = {{ ss| safe }};
-    var tf = {{ tf| safe }};
     class MySelectSeason extends React.Component {
       render() {
         let options = [];
-        let hintOption = React.createElement("OPTION", { selected: null }, "請選擇賽季");
+        let hintOption = <option value="unchoose">請選擇賽季</option>;
         options.push(hintOption);
+        let ss = {{ ss|safe }};
         ss['season'].forEach(function (value, index, array) {
-          let option = React.createElement("OPTION", { value: value }, value);
+          let option = <option value={value}>{value}</option>;
           options.push(option);
         })
-        return React.createElement("SELECT", this.props, options);
+        return <select name={this.props.name} className={this.props.className} value={this.props.value} onChange={this.props.handler}>{options}</select>;
+      }
+      handleChange(e){
+        this.setState({selected:e.currentTarget.value});
       }
     }
     class MySelectTeam extends React.Component {
       render() {
         let options = [];
-        let hintOption = React.createElement("OPTION", { selected: null }, "請選擇隊伍");
+        let hintOption = <option value="unchoose">請選擇球隊</option>;
         options.push(hintOption);
+        let tf = {{ tf| safe }};
         Object.keys(tf).forEach(function (key) {
-          let option = React.createElement("OPTION", { value: tf[key] }, key);
+          let option = <option value={tf[key]}>{key}</option>;
           options.push(option);
         })
-        return React.createElement("SELECT", this.props, options);
+        return <select name={this.props.name} className={this.props.className} value={this.props.value} onChange={this.props.handler}>{options}</select>;
+      }
+      handleChange(e){
+        this.setState({selected:e.currentTarget.value});
       }
     }
     class MyForm extends React.Component {
+      constructor(props){
+        super(props);
+        this.state = {
+          selectedSeason:"unchoose",
+          selectedTeamA:"unchoose",
+          selectedTeamB:"unchoose",
+        };
+        this.handlerChangeSeason = this.handlerChangeSeason.bind(this);
+        this.handlerChangeTeamA = this.handlerChangeTeamA.bind(this);
+        this.handlerChangeTeamB = this.handlerChangeTeamB.bind(this);
+      }
+      handlerChangeSeason(e){
+        this.setState({selectedSeason:e.currentTarget.value});
+        this.render();
+      }
+      handlerChangeTeamA(e){
+        this.setState({selectedTeamA:e.currentTarget.value});
+        this.render();
+      }
+      handlerChangeTeamB(e){
+        this.setState({selectedTeamB:e.currentTarget.value});
+        this.render();
+      }
       render() {
-        let contains = [];
-        let selectSeason = React.createElement(MySelectSeason, { name: "s", class: "custom-select" });
-        contains.push(selectSeason);
-        let selectTeamA = React.createElement(MySelectTeam, { name: "t", class: "custom-select" });
-        contains.push(selectTeamA);
-        let selectTeamB = React.createElement(MySelectTeam, { name: "t2", class: "custom-select" });
-        contains.push(selectTeamB);
-        let button = React.createElement("BUTTON", { class: "btn btn-outline-secondary", onclick: "show();" },"送出查詢");
-        contains.push(button);
-        return React.createElement("FORM", { name: "myform", action: "/chart" }, contains);
+        return <form name="myform" action="/chart">
+          <MySelectSeason name="s" className="custom-select" value={this.state.selectedSeason} handler={this.handlerChangeSeason}/>
+          <MySelectTeam name="t" className="custom-select" value={this.state.selectedTeamA} handler={this.handlerChangeTeamA}/>
+          <MySelectTeam name="t2" className="custom-select" value={this.state.selectedTeamB} handler={this.handlerChangeTeamB}/>
+          <input className="btn btn-outline-secondary" type="submit" value="送出查詢" onClick={this.handleClick.bind(this)} />
+        </form>;
+      }
+      handleClick(e){
+        e.preventDefault();
+        function drawRadar(season,team,div){
+          var data;
+          d3.json("/data?s="+season+"&t="+team, function (d) {
+            data = d;
+            /* Radar chart design created by Nadieh Bremer - VisualCinnamon.com */
+    
+            ////////////////////////////////////////////////////////////// 
+            //////////////////////// Set-Up ////////////////////////////// 
+            ////////////////////////////////////////////////////////////// 
+    
+            var margin = { top: 100, right: 100, bottom: 100, left: 100 },
+              width = Math.min(600, window.innerWidth - 10) - margin.left - margin.right,
+              height = Math.min(width, window.innerHeight - margin.top - margin.bottom - 20);
+    
+            ////////////////////////////////////////////////////////////// 
+            //////////////////// Draw the Chart ////////////////////////// 
+            ////////////////////////////////////////////////////////////// 
+    
+            var color = d3.scale.ordinal()
+              .range(["#EDC951", "#CC333F", "#00A0B0"]);
+            var radarChartOptions = {
+              w: width,
+              h: height,
+              margin: margin,
+              maxValue: 0.5,
+              levels: 5,
+              roundStrokes: true,
+              color: color
+            };
+            //Call function to draw the Radar chart
+            RadarChart(div, data, radarChartOptions);
+          });
+        }
+        function drawLine(season,team,div){
+          am4core.ready(function () {
+
+          // Themes begin
+          am4core.useTheme(am4themes_animated);
+          // Themes end
+
+          // Create chart instance
+          var chart = am4core.create(div, am4charts.XYChart);
+
+          chart.colors.step = 2;
+          chart.maskBullets = false;
+
+          // Add data
+          chart.dataSource.url = "/data2?s="+season+"&t="+team;
+
+          // Create axes (edit ver)
+          var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
+          dateAxis.renderer.grid.template.location = 0;
+          dateAxis.renderer.minGridDistance = 50;
+          dateAxis.renderer.grid.template.disabled = true;
+          dateAxis.renderer.fullWidthTooltip = true;
+
+          var distanceAxis = chart.yAxes.push(new am4charts.ValueAxis());
+          // distanceAxis.title.text = "Distance";
+          distanceAxis.title.text = "TOP_PLAYERS";
+          distanceAxis.min = 0;
+          distanceAxis.max = 5;
+
+          //distanceAxis.renderer.grid.template.disabled = true;
+
+          // var durationAxis = chart.yAxes.push(new am4charts.DurationAxis());
+          // durationAxis.title.text = "Duration";
+          // durationAxis.baseUnit = "minute";
+          // //durationAxis.renderer.grid.template.disabled = true;
+          // durationAxis.renderer.opposite = true;
+          // durationAxis.syncWithAxis = distanceAxis;
+
+          // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
+
+          var durationAxis = chart.yAxes.push(new am4charts.ValueAxis());
+          // durationAxis.title.text = "Duration";
+          durationAxis.title.text = "EFF";
+          // durationAxis.baseUnit = "minute";
+          //durationAxis.renderer.grid.template.disabled = true;
+          durationAxis.renderer.opposite = true;
+          durationAxis.syncWithAxis = distanceAxis;
+
+          // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
+
+          var latitudeAxis = chart.yAxes.push(new am4charts.ValueAxis());
+          latitudeAxis.renderer.grid.template.disabled = true;
+          latitudeAxis.renderer.labels.template.disabled = true;
+          latitudeAxis.syncWithAxis = distanceAxis;
+
+          // Create series
+          var distanceSeries = chart.series.push(new am4charts.ColumnSeries());
+          // distanceSeries.dataFields.valueY = "distance";
+          distanceSeries.dataFields.valueY = "TOP_PLAYERS";
+          // distanceSeries.dataFields.dateX = "date";
+          distanceSeries.dataFields.dateX = "GAME_DATE_EST";
+          distanceSeries.yAxis = distanceAxis;
+          // distanceSeries.tooltipText = "{valueY} miles";
+          distanceSeries.tooltipText = "{valueY}";
+          // distanceSeries.name = "Distance";
+          distanceSeries.name = "TOP_PLAYERS";
+          distanceSeries.columns.template.fillOpacity = 0.7;
+          distanceSeries.columns.template.propertyFields.strokeDasharray = "dashLength";
+          distanceSeries.columns.template.propertyFields.fillOpacity = "alpha";
+          distanceSeries.showOnInit = true;
+
+          var distanceState = distanceSeries.columns.template.states.create("hover");
+          distanceState.properties.fillOpacity = 0.9;
+
+          var durationSeries = chart.series.push(new am4charts.LineSeries());
+          // durationSeries.dataFields.valueY = "duration";
+          durationSeries.dataFields.valueY = "EFF";
+          // durationSeries.dataFields.dateX = "date";
+          durationSeries.dataFields.dateX = "GAME_DATE_EST";
+          durationSeries.yAxis = durationAxis;
+          // durationSeries.name = "Duration";
+          durationSeries.name = "EFF";
+          durationSeries.strokeWidth = 2;
+          durationSeries.propertyFields.strokeDasharray = "dashLength";
+          // durationSeries.tooltipText = "{valueY.formatDuration()}";
+          durationSeries.tooltipText = "EFF: {valueY}";
+          durationSeries.showOnInit = true;
+
+          var durationBullet = durationSeries.bullets.push(new am4charts.Bullet());
+          var durationRectangle = durationBullet.createChild(am4core.Rectangle);
+          durationBullet.horizontalCenter = "middle";
+          durationBullet.verticalCenter = "middle";
+          durationBullet.width = 7;
+          durationBullet.height = 7;
+          durationRectangle.width = 7;
+          durationRectangle.height = 7;
+
+          var durationState = durationBullet.states.create("hover");
+          durationState.properties.scale = 1.2;
+
+          var latitudeSeries = chart.series.push(new am4charts.LineSeries());
+          // latitudeSeries.dataFields.valueY = "latitude";
+          latitudeSeries.dataFields.valueY = "ELO";
+          // latitudeSeries.dataFields.dateX = "date";
+          latitudeSeries.dataFields.dateX = "GAME_DATE_EST";
+          latitudeSeries.yAxis = latitudeAxis;
+          // latitudeSeries.name = "Duration";
+          latitudeSeries.name = "ELO";
+          latitudeSeries.strokeWidth = 2;
+          latitudeSeries.propertyFields.strokeDasharray = "dashLength";
+          // latitudeSeries.tooltipText = "Latitude: {valueY} ({townName})";
+          latitudeSeries.tooltipText = "ELO: {valueY}";
+          latitudeSeries.showOnInit = true;
+
+          var latitudeBullet = latitudeSeries.bullets.push(new am4charts.CircleBullet());
+          latitudeBullet.circle.fill = am4core.color("#fff");
+          latitudeBullet.circle.strokeWidth = 2;
+          // latitudeBullet.circle.propertyFields.radius = "townSize";
+          latitudeBullet.circle.propertyFields.radius = "WIN_PR";
+
+          var latitudeState = latitudeBullet.states.create("hover");
+          latitudeState.properties.scale = 1.2;
+
+          var latitudeLabel = latitudeSeries.bullets.push(new am4charts.LabelBullet());
+          latitudeLabel.label.text = "{townName2}";
+          latitudeLabel.label.horizontalCenter = "left";
+          latitudeLabel.label.dx = 14;
+
+          // Add legend
+          chart.legend = new am4charts.Legend();
+
+          // Add cursor
+          chart.cursor = new am4charts.XYCursor();
+          chart.cursor.fullWidthLineX = true;
+          chart.cursor.xAxis = dateAxis;
+          chart.cursor.lineX.strokeOpacity = 0;
+          chart.cursor.lineX.fill = am4core.color("#000");
+          chart.cursor.lineX.fillOpacity = 0.1;
+
+          }); // end am4core.ready()
+        }
+        var box = document.getElementById("box");
+        box.style.width = 0;
+        var style = window.getComputedStyle(box);
+        var size = style.getPropertyValue("width");
+        size = parseInt(size);
+        var main = document.getElementById("main");
+        drawRadar(this.state.selectedSeason, this.state.selectedTeamA, ".radarChart");
+        drawRadar(this.state.selectedSeason, this.state.selectedTeamB, ".radarChart2");
+        drawLine(this.state.selectedSeason, this.state.selectedTeamA, "chartdiv");
+        drawLine(this.state.selectedSeason, this.state.selectedTeamB, "chartdiv2");
+        if(box.style.width=="0px"){
+          var animate = window.setInterval(function () {
+          if (size >= window.screen.width) {
+              window.clearInterval(animate);
+              main.style.opacity = 1;
+            }
+            size = size + 5;
+            box.style.width = size + "px";
+          }, 5);
+        }
+        
+        function getData(callback, team, id){
+          let req = new XMLHttpRequest();
+          req.open("get", "/data3?t="+team);
+          req.onload = function(){
+              callback(this.responseText, id);
+          };
+          req.send();
+        }
+        function showData(result, id){
+            let imgDiv = document.getElementById(id);
+            let obj = JSON.parse(result);
+            imgDiv.src = obj.logoURL;
+        };
+        getData(showData,this.state.selectedTeamA,"logo"); 
+        getData(showData,this.state.selectedTeamB,"logo2"); 
       }
     }
     
@@ -234,14 +473,14 @@
   <div class="container">
     <div class="radarChart" id="radarChart"></div>
     <div class="right">
-      <img src={{ g1|safe }} alt="" class="demo">
+      <img src={{ g1|safe }} alt="" class="demo" id="logo">
       <div id="chartdiv" class="lineChart"></div>
     </div>
   </div>
   <div class="container">
     <div class="radarChart2" id="radarChart"></div>
     <div class="right">
-      <img src={{ g2|safe }} alt="" class="demo">
+      <img src={{ g2|safe }} alt="" class="demo" id="logo2">
       <div id="chartdiv2" class="lineChart"></div>
     </div>
   </div>
@@ -258,364 +497,24 @@
   ////////////////////////////////////////////////////////////// 
   ////////////////////////// Data ////////////////////////////// 
   ////////////////////////////////////////////////////////////// 
-  var data;
-  d3.json("/data?s={{s}}&t={{t}}", function (d) {
-    data = d;
 
-
-    /* Radar chart design created by Nadieh Bremer - VisualCinnamon.com */
-
-    ////////////////////////////////////////////////////////////// 
-    //////////////////////// Set-Up ////////////////////////////// 
-    ////////////////////////////////////////////////////////////// 
-
-    var margin = { top: 100, right: 100, bottom: 100, left: 100 },
-      width = Math.min(600, window.innerWidth - 10) - margin.left - margin.right,
-      height = Math.min(width, window.innerHeight - margin.top - margin.bottom - 20);
-
-    ////////////////////////////////////////////////////////////// 
-    //////////////////// Draw the Chart ////////////////////////// 
-    ////////////////////////////////////////////////////////////// 
-
-    var color = d3.scale.ordinal()
-      .range(["#EDC951", "#CC333F", "#00A0B0"]);
-    var radarChartOptions = {
-      w: width,
-      h: height,
-      margin: margin,
-      maxValue: 0.5,
-      levels: 5,
-      roundStrokes: true,
-      color: color
-    };
-    //Call function to draw the Radar chart
-    RadarChart(".radarChart", data, radarChartOptions);
-  });
 </script>
 <!-- radar2 -->
 <script>
   ////////////////////////////////////////////////////////////// 
   ////////////////////////// Data ////////////////////////////// 
   ////////////////////////////////////////////////////////////// 
-  var data;
-  d3.json("/data?s={{s}}&t={{t2}}", function (d) {
-    data = d;
-
-
-    /* Radar chart design created by Nadieh Bremer - VisualCinnamon.com */
-
-    ////////////////////////////////////////////////////////////// 
-    //////////////////////// Set-Up ////////////////////////////// 
-    ////////////////////////////////////////////////////////////// 
-
-    var margin = { top: 100, right: 100, bottom: 100, left: 100 },
-      width = Math.min(600, window.innerWidth - 10) - margin.left - margin.right,
-      height = Math.min(width, window.innerHeight - margin.top - margin.bottom - 20);
-
-    ////////////////////////////////////////////////////////////// 
-    //////////////////// Draw the Chart ////////////////////////// 
-    ////////////////////////////////////////////////////////////// 
-
-    var color = d3.scale.ordinal()
-      .range(["#00A0B0", "#CC333F", "#EDC951"]);
-    var radarChartOptions = {
-      w: width,
-      h: height,
-      margin: margin,
-      maxValue: 0.5,
-      levels: 5,
-      roundStrokes: true,
-      color: color
-    };
-    //Call function to draw the Radar chart
-    RadarChart(".radarChart2", data, radarChartOptions);
-  });
+  
 </script>
 
 <!-- Chart code -->
 <script>
-  am4core.ready(function () {
-
-    // Themes begin
-    am4core.useTheme(am4themes_animated);
-    // Themes end
-
-    // Create chart instance
-    var chart = am4core.create("chartdiv", am4charts.XYChart);
-
-    chart.colors.step = 2;
-    chart.maskBullets = false;
-
-    // Add data
-    chart.dataSource.url = "/data2?s={{s}}&t={{t}}";
-
-    // Create axes (edit ver)
-    var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
-    dateAxis.renderer.grid.template.location = 0;
-    dateAxis.renderer.minGridDistance = 50;
-    dateAxis.renderer.grid.template.disabled = true;
-    dateAxis.renderer.fullWidthTooltip = true;
-
-    var distanceAxis = chart.yAxes.push(new am4charts.ValueAxis());
-    // distanceAxis.title.text = "Distance";
-    distanceAxis.title.text = "TOP_PLAYERS";
-    distanceAxis.min = 0;
-    distanceAxis.max = 5;
-
-    //distanceAxis.renderer.grid.template.disabled = true;
-
-    // var durationAxis = chart.yAxes.push(new am4charts.DurationAxis());
-    // durationAxis.title.text = "Duration";
-    // durationAxis.baseUnit = "minute";
-    // //durationAxis.renderer.grid.template.disabled = true;
-    // durationAxis.renderer.opposite = true;
-    // durationAxis.syncWithAxis = distanceAxis;
-
-    // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
-
-    var durationAxis = chart.yAxes.push(new am4charts.ValueAxis());
-    // durationAxis.title.text = "Duration";
-    durationAxis.title.text = "EFF";
-    // durationAxis.baseUnit = "minute";
-    //durationAxis.renderer.grid.template.disabled = true;
-    durationAxis.renderer.opposite = true;
-    durationAxis.syncWithAxis = distanceAxis;
-
-    // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
-
-    var latitudeAxis = chart.yAxes.push(new am4charts.ValueAxis());
-    latitudeAxis.renderer.grid.template.disabled = true;
-    latitudeAxis.renderer.labels.template.disabled = true;
-    latitudeAxis.syncWithAxis = distanceAxis;
-
-    // Create series
-    var distanceSeries = chart.series.push(new am4charts.ColumnSeries());
-    // distanceSeries.dataFields.valueY = "distance";
-    distanceSeries.dataFields.valueY = "TOP_PLAYERS";
-    // distanceSeries.dataFields.dateX = "date";
-    distanceSeries.dataFields.dateX = "GAME_DATE_EST";
-    distanceSeries.yAxis = distanceAxis;
-    // distanceSeries.tooltipText = "{valueY} miles";
-    distanceSeries.tooltipText = "{valueY}";
-    // distanceSeries.name = "Distance";
-    distanceSeries.name = "TOP_PLAYERS";
-    distanceSeries.columns.template.fillOpacity = 0.7;
-    distanceSeries.columns.template.propertyFields.strokeDasharray = "dashLength";
-    distanceSeries.columns.template.propertyFields.fillOpacity = "alpha";
-    distanceSeries.showOnInit = true;
-
-    var distanceState = distanceSeries.columns.template.states.create("hover");
-    distanceState.properties.fillOpacity = 0.9;
-
-    var durationSeries = chart.series.push(new am4charts.LineSeries());
-    // durationSeries.dataFields.valueY = "duration";
-    durationSeries.dataFields.valueY = "EFF";
-    // durationSeries.dataFields.dateX = "date";
-    durationSeries.dataFields.dateX = "GAME_DATE_EST";
-    durationSeries.yAxis = durationAxis;
-    // durationSeries.name = "Duration";
-    durationSeries.name = "EFF";
-    durationSeries.strokeWidth = 2;
-    durationSeries.propertyFields.strokeDasharray = "dashLength";
-    // durationSeries.tooltipText = "{valueY.formatDuration()}";
-    durationSeries.tooltipText = "EFF: {valueY}";
-    durationSeries.showOnInit = true;
-
-    var durationBullet = durationSeries.bullets.push(new am4charts.Bullet());
-    var durationRectangle = durationBullet.createChild(am4core.Rectangle);
-    durationBullet.horizontalCenter = "middle";
-    durationBullet.verticalCenter = "middle";
-    durationBullet.width = 7;
-    durationBullet.height = 7;
-    durationRectangle.width = 7;
-    durationRectangle.height = 7;
-
-    var durationState = durationBullet.states.create("hover");
-    durationState.properties.scale = 1.2;
-
-    var latitudeSeries = chart.series.push(new am4charts.LineSeries());
-    // latitudeSeries.dataFields.valueY = "latitude";
-    latitudeSeries.dataFields.valueY = "ELO";
-    // latitudeSeries.dataFields.dateX = "date";
-    latitudeSeries.dataFields.dateX = "GAME_DATE_EST";
-    latitudeSeries.yAxis = latitudeAxis;
-    // latitudeSeries.name = "Duration";
-    latitudeSeries.name = "ELO";
-    latitudeSeries.strokeWidth = 2;
-    latitudeSeries.propertyFields.strokeDasharray = "dashLength";
-    // latitudeSeries.tooltipText = "Latitude: {valueY} ({townName})";
-    latitudeSeries.tooltipText = "ELO: {valueY}";
-    latitudeSeries.showOnInit = true;
-
-    var latitudeBullet = latitudeSeries.bullets.push(new am4charts.CircleBullet());
-    latitudeBullet.circle.fill = am4core.color("#fff");
-    latitudeBullet.circle.strokeWidth = 2;
-    // latitudeBullet.circle.propertyFields.radius = "townSize";
-    latitudeBullet.circle.propertyFields.radius = "WIN_PR";
-
-    var latitudeState = latitudeBullet.states.create("hover");
-    latitudeState.properties.scale = 1.2;
-
-    var latitudeLabel = latitudeSeries.bullets.push(new am4charts.LabelBullet());
-    latitudeLabel.label.text = "{townName2}";
-    latitudeLabel.label.horizontalCenter = "left";
-    latitudeLabel.label.dx = 14;
-
-    // Add legend
-    chart.legend = new am4charts.Legend();
-
-    // Add cursor
-    chart.cursor = new am4charts.XYCursor();
-    chart.cursor.fullWidthLineX = true;
-    chart.cursor.xAxis = dateAxis;
-    chart.cursor.lineX.strokeOpacity = 0;
-    chart.cursor.lineX.fill = am4core.color("#000");
-    chart.cursor.lineX.fillOpacity = 0.1;
-
-  }); // end am4core.ready()
+  
 </script>
 
 <!-- Chart code -->
 <script>
-  am4core.ready(function () {
-
-    // Themes begin
-    am4core.useTheme(am4themes_animated);
-    // Themes end
-
-    // Create chart instance
-    var chart = am4core.create("chartdiv2", am4charts.XYChart);
-
-    chart.colors.step = 2;
-    chart.maskBullets = false;
-
-    // Add data
-    chart.dataSource.url = "/data2?s={{s}}&t={{t2}}";
-
-    // Create axes (edit ver)
-    var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
-    dateAxis.renderer.grid.template.location = 0;
-    dateAxis.renderer.minGridDistance = 50;
-    dateAxis.renderer.grid.template.disabled = true;
-    dateAxis.renderer.fullWidthTooltip = true;
-
-    var distanceAxis = chart.yAxes.push(new am4charts.ValueAxis());
-    // distanceAxis.title.text = "Distance";
-    distanceAxis.title.text = "TOP_PLAYERS";
-    distanceAxis.min = 0;
-    distanceAxis.max = 5;
-
-    //distanceAxis.renderer.grid.template.disabled = true;
-
-    // var durationAxis = chart.yAxes.push(new am4charts.DurationAxis());
-    // durationAxis.title.text = "Duration";
-    // durationAxis.baseUnit = "minute";
-    // //durationAxis.renderer.grid.template.disabled = true;
-    // durationAxis.renderer.opposite = true;
-    // durationAxis.syncWithAxis = distanceAxis;
-
-    // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
-
-    var durationAxis = chart.yAxes.push(new am4charts.ValueAxis());
-    // durationAxis.title.text = "Duration";
-    durationAxis.title.text = "EFF";
-    // durationAxis.baseUnit = "minute";
-    //durationAxis.renderer.grid.template.disabled = true;
-    durationAxis.renderer.opposite = true;
-    durationAxis.syncWithAxis = distanceAxis;
-
-    // durationAxis.durationFormatter.durationFormat = "hh'h' mm'min'";
-
-    var latitudeAxis = chart.yAxes.push(new am4charts.ValueAxis());
-    latitudeAxis.renderer.grid.template.disabled = true;
-    latitudeAxis.renderer.labels.template.disabled = true;
-    latitudeAxis.syncWithAxis = distanceAxis;
-
-    // Create series
-    var distanceSeries = chart.series.push(new am4charts.ColumnSeries());
-    // distanceSeries.dataFields.valueY = "distance";
-    distanceSeries.dataFields.valueY = "TOP_PLAYERS";
-    // distanceSeries.dataFields.dateX = "date";
-    distanceSeries.dataFields.dateX = "GAME_DATE_EST";
-    distanceSeries.yAxis = distanceAxis;
-    // distanceSeries.tooltipText = "{valueY} miles";
-    distanceSeries.tooltipText = "{valueY}";
-    // distanceSeries.name = "Distance";
-    distanceSeries.name = "TOP_PLAYERS";
-    distanceSeries.columns.template.fillOpacity = 0.7;
-    distanceSeries.columns.template.propertyFields.strokeDasharray = "dashLength";
-    distanceSeries.columns.template.propertyFields.fillOpacity = "alpha";
-    distanceSeries.showOnInit = true;
-
-    var distanceState = distanceSeries.columns.template.states.create("hover");
-    distanceState.properties.fillOpacity = 0.9;
-
-    var durationSeries = chart.series.push(new am4charts.LineSeries());
-    // durationSeries.dataFields.valueY = "duration";
-    durationSeries.dataFields.valueY = "EFF";
-    // durationSeries.dataFields.dateX = "date";
-    durationSeries.dataFields.dateX = "GAME_DATE_EST";
-    durationSeries.yAxis = durationAxis;
-    // durationSeries.name = "Duration";
-    durationSeries.name = "EFF";
-    durationSeries.strokeWidth = 2;
-    durationSeries.propertyFields.strokeDasharray = "dashLength";
-    // durationSeries.tooltipText = "{valueY.formatDuration()}";
-    durationSeries.tooltipText = "EFF: {valueY}";
-    durationSeries.showOnInit = true;
-
-    var durationBullet = durationSeries.bullets.push(new am4charts.Bullet());
-    var durationRectangle = durationBullet.createChild(am4core.Rectangle);
-    durationBullet.horizontalCenter = "middle";
-    durationBullet.verticalCenter = "middle";
-    durationBullet.width = 7;
-    durationBullet.height = 7;
-    durationRectangle.width = 7;
-    durationRectangle.height = 7;
-
-    var durationState = durationBullet.states.create("hover");
-    durationState.properties.scale = 1.2;
-
-    var latitudeSeries = chart.series.push(new am4charts.LineSeries());
-    // latitudeSeries.dataFields.valueY = "latitude";
-    latitudeSeries.dataFields.valueY = "ELO";
-    // latitudeSeries.dataFields.dateX = "date";
-    latitudeSeries.dataFields.dateX = "GAME_DATE_EST";
-    latitudeSeries.yAxis = latitudeAxis;
-    // latitudeSeries.name = "Duration";
-    latitudeSeries.name = "ELO";
-    latitudeSeries.strokeWidth = 2;
-    latitudeSeries.propertyFields.strokeDasharray = "dashLength";
-    // latitudeSeries.tooltipText = "Latitude: {valueY} ({townName})";
-    latitudeSeries.tooltipText = "ELO: {valueY}";
-    latitudeSeries.showOnInit = true;
-
-    var latitudeBullet = latitudeSeries.bullets.push(new am4charts.CircleBullet());
-    latitudeBullet.circle.fill = am4core.color("#fff");
-    latitudeBullet.circle.strokeWidth = 2;
-    // latitudeBullet.circle.propertyFields.radius = "townSize";
-    latitudeBullet.circle.propertyFields.radius = "WIN_PR";
-
-    var latitudeState = latitudeBullet.states.create("hover");
-    latitudeState.properties.scale = 1.2;
-
-    var latitudeLabel = latitudeSeries.bullets.push(new am4charts.LabelBullet());
-    latitudeLabel.label.text = "{townName2}";
-    latitudeLabel.label.horizontalCenter = "left";
-    latitudeLabel.label.dx = 14;
-
-    // Add legend
-    chart.legend = new am4charts.Legend();
-
-    // Add cursor
-    chart.cursor = new am4charts.XYCursor();
-    chart.cursor.fullWidthLineX = true;
-    chart.cursor.xAxis = dateAxis;
-    chart.cursor.lineX.strokeOpacity = 0;
-    chart.cursor.lineX.fill = am4core.color("#000");
-    chart.cursor.lineX.fillOpacity = 0.1;
-
-  }); // end am4core.ready()
+  
 </script>
 <script>
   function myFunction() {
