@@ -32,6 +32,8 @@
   <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+  <!-- Redux -->
+  <script src="https://unpkg.com/redux@latest/dist/redux.min.js"></script>
 
   <!-- Resources -->
   <title>W3.CSS Template</title>
@@ -138,26 +140,32 @@
     }
   </style>
   <script type="text/babel">
+    let store;
+    let reducer = function (state, action) {
+            switch (action.type) {
+                case "SeasonChange":
+                    state.selectedSeason = action.select;
+                    return state;
+                case "TeamChange":
+                    state.selectedTeam[action.name] = action.select;
+                    return state;
+                default:
+                    return state;
+            }
+        };
     window.onload = function () {
-      // var box = document.getElementById("box");
-      // var style = window.getComputedStyle(box);
-      // var size = style.getPropertyValue("width");
-      // size = parseInt(size);
-      // var animate = window.setInterval(function () {
-      //   if (size >= window.screen.width) {
-      //     window.clearInterval(animate);
-      //     var main = document.getElementById("main");
-      //     main.style.opacity = 1;
-      //   }
-      //   size = size + 5;
-      //   box.style.width = size + "px";
-      // }, 5);
-      let myForm = <MyForm/>;
-      var mm = document.getElementById("reactForm");
-      ReactDOM.render(myForm, mm);
+      store = Redux.createStore(reducer, {
+          selectedSeason:"unchoose",
+          selectedTeam:{
+            t:"unchoose",
+            t2:"unchoose"
+          },
+      });
+      ReactDOM.render(<MyForm/>, document.getElementById("reactForm"));
     }
     class MySelectSeason extends React.Component {
       render() {
+        let state = store.getState();
         let options = [];
         let hintOption = <option value="unchoose">請選擇賽季</option>;
         options.push(hintOption);
@@ -166,14 +174,16 @@
           let option = <option value={value}>{value}</option>;
           options.push(option);
         })
-        return <select name={this.props.name} className={this.props.className} value={this.props.value} onChange={this.props.handler}>{options}</select>;
+        return <select name={this.props.name} className={this.props.className} value={state.selectedSeason} onChange={this.handler}>{options}</select>;
       }
-      handleChange(e){
-        this.setState({selected:e.currentTarget.value});
+      handler(e){
+        store.dispatch({type:"SeasonChange", select:e.currentTarget.value});
       }
     }
     class MySelectTeam extends React.Component {
       render() {
+        let state = store.getState();
+        let team_name = this.props.name;
         let options = [];
         let hintOption = <option value="unchoose">請選擇球隊</option>;
         options.push(hintOption);
@@ -182,43 +192,33 @@
           let option = <option value={tf[key]}>{key}</option>;
           options.push(option);
         })
-        return <select name={this.props.name} className={this.props.className} value={this.props.value} onChange={this.props.handler}>{options}</select>;
+        return <select name={team_name} className={this.props.className} value={state.selectedTeam[team_name]} onChange={this.handler.bind(this)}>{options}</select>;
       }
-      handleChange(e){
-        this.setState({selected:e.currentTarget.value});
+      handler(e){
+        store.dispatch({type:"TeamChange", select:e.currentTarget.value, name:this.props.name});
       }
     }
     class MyForm extends React.Component {
       constructor(props){
         super(props);
-        this.state = {
-          selectedSeason:"unchoose",
-          selectedTeamA:"unchoose",
-          selectedTeamB:"unchoose",
-        };
-        this.handlerChangeSeason = this.handlerChangeSeason.bind(this);
-        this.handlerChangeTeamA = this.handlerChangeTeamA.bind(this);
-        this.handlerChangeTeamB = this.handlerChangeTeamB.bind(this);
-      }
-      handlerChangeSeason(e){
-        this.setState({selectedSeason:e.currentTarget.value});
-        this.render();
-      }
-      handlerChangeTeamA(e){
-        this.setState({selectedTeamA:e.currentTarget.value});
-        this.render();
-      }
-      handlerChangeTeamB(e){
-        this.setState({selectedTeamB:e.currentTarget.value});
-        this.render();
+        this.state = store.getState();
       }
       render() {
         return <form name="myform" action="/chart">
-          <MySelectSeason name="s" className="custom-select" value={this.state.selectedSeason} handler={this.handlerChangeSeason}/>
-          <MySelectTeam name="t" className="custom-select" value={this.state.selectedTeamA} handler={this.handlerChangeTeamA}/>
-          <MySelectTeam name="t2" className="custom-select" value={this.state.selectedTeamB} handler={this.handlerChangeTeamB}/>
+          <MySelectSeason name="s" className="custom-select"/>
+          <MySelectTeam name="t" className="custom-select"/>
+          <MySelectTeam name="t2" className="custom-select"/>
           <input className="btn btn-outline-secondary" type="submit" value="送出查詢" onClick={this.handleClick.bind(this)} />
         </form>;
+      }
+      componentDidMount(){
+          this.unsubscribe=store.subscribe(this.refresh.bind(this));
+      }
+      refresh(){
+          this.setState(store.getState());
+      }
+      componentWillUnmount(){
+          this.unsubscribe();
       }
       handleClick(e){
         e.preventDefault();
@@ -402,10 +402,10 @@
         var size = style.getPropertyValue("width");
         size = parseInt(size);
         var main = document.getElementById("main");
-        drawRadar(this.state.selectedSeason, this.state.selectedTeamA, ".radarChart");
-        drawRadar(this.state.selectedSeason, this.state.selectedTeamB, ".radarChart2");
-        drawLine(this.state.selectedSeason, this.state.selectedTeamA, "chartdiv");
-        drawLine(this.state.selectedSeason, this.state.selectedTeamB, "chartdiv2");
+        drawRadar(this.state.selectedSeason, this.state.selectedTeam.t, ".radarChart");
+        drawRadar(this.state.selectedSeason, this.state.selectedTeam.t2, ".radarChart2");
+        drawLine(this.state.selectedSeason, this.state.selectedTeam.t, "chartdiv");
+        drawLine(this.state.selectedSeason, this.state.selectedTeam.t2, "chartdiv2");
         if(box.style.width=="0px"){
           var animate = window.setInterval(function () {
           if (size >= window.screen.width) {
@@ -430,8 +430,8 @@
             let obj = JSON.parse(result);
             imgDiv.src = obj.logoURL;
         };
-        getData(showData,this.state.selectedTeamA,"logo"); 
-        getData(showData,this.state.selectedTeamB,"logo2"); 
+        getData(showData,this.state.selectedTeam.t,"logo"); 
+        getData(showData,this.state.selectedTeam.t2,"logo2"); 
       }
     }
     
